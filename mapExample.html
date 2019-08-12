@@ -1,0 +1,91 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8" />
+<script src="three.min.js"></script>
+<script src="ColladaLoader.min.js"></script>
+<script src="ColladaLoader2.min.js"></script>
+<script src="STLLoader.min.js"></script>
+<script src="eventemitter2.min.js"></script>
+<script src="roslib.js"></script>
+<script src="ros3d.js"></script>
+
+<script>
+  /**
+   * Setup all visualization elements when the page is loaded.
+   */
+   // Connect to ROS.
+    var ros = new ROSLIB.Ros({
+      groovyCompatibility : false,
+      url : 'ws://localhost:9090'
+    });
+
+    var tfClient = new ROSLIB.TFClient({
+      ros : ros,
+      angularThres : 0.01,
+      transThres : 0.01,
+      rate : 10.0,
+      fixedFrame : 'map'
+    });
+    
+  function init() {
+    
+
+    // Create the main viewer.
+    var viewer = new ROS3D.Viewer({
+      divID : 'map',
+      width : 800,
+      height : 600,
+      antialias : true
+    });
+
+    var urdfClient = new ROS3D.UrdfClient({
+      ros : ros,
+      tfClient : tfClient,
+      path : 'http://localhost/',
+      frameID  : 'base_link',
+      rootObject : viewer.scene,
+      loader : ROS3D.COLLADA_LOADER_2
+    });
+
+    // Setup the map client.
+    var gridClient = new ROS3D.OccupancyGridClient({
+      ros : ros,
+      rootObject : viewer.scene
+    });
+  }
+function mover(linearX, linearY, linearZ, angularX, angularY, angularZ, speed){
+
+    var cmdVel = new ROSLIB.Topic({
+    ros : ros,
+    name : '/cmd_vel',
+    messageType : 'geometry_msgs/Twist'
+  });
+
+  var twist = new ROSLIB.Message({
+    linear : {
+      x : linearX,
+      y : linearY,
+      z : linearZ
+    },
+    angular : {
+      x : angularX,
+      y : angularY,
+      z : angularZ
+    }
+  });
+  cmdVel.publish(twist);   
+  }
+</script>
+</head>
+
+<body onload="init()">
+  <h1>Simple Map Example</h1>
+  <div id="map"></div>
+  <div id="urdf"></div>
+  <button id="forward" onmousedown="mover(0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)" onmouseup="mover(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1)">Forward</button>
+  <button id="backward" onmousedown="mover(-0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)" onmouseup="mover(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1)">backward</button>
+  <button id="left" onmousedown="mover(0., 0.0, 0.0, 0.0, 0.0, 0.1, 1.0)" onmouseup="mover(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1)">left</button>
+  <button id="right" onmousedown="mover(0.0, 0.0, 0.0, 0.0, 0.0, -0.1, 1.0)" onmouseup="mover(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1)">right</button>
+</body>
+</html>
